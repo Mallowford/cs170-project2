@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cfloat>
 #include <climits>
+#include <chrono>
 
 class DATA {
     public:
@@ -39,20 +40,62 @@ class DATA {
 };
 
 double leave_one_out_cross_validation(const DATA& data, std::vector<int>& features, int feature_to_add);
-void feature_search_demo(DATA);
-void read(const std::string& filename);
-void forwardSelection();
-void backwardsElimination();
+void feature_search_demo(DATA& data);
+void read(const std::string& filename, DATA& data);
+void backwardsElimination(DATA& data);
+double backward_leave_one_out_cross_validation(const DATA& data, std::vector<int>& features, int feature_to_remove);
 
 int main() {
     DATA data;
     std::string filename;
 
-    filename = "CS170_Large_DataSet__28.txt";
-    read(filename, data);
+    std::cout <<    "Hello! This is Ryan Hoang's Feature Selection Algorithm.\n" <<
+                    "Type in the name of the file (with extension) you want to test: ";
+    std::cin >> filename;
+    
+    if (filename == "で") {
+        filename = "CS170_Large_DataSet__28.txt";
+    }
+    else if (filename == "ち") {
+        filename = "CS170_Small_DataSet__15.txt";
+    };
+    std::cin.clear();
+    std::cin.ignore();
+    std::cout << "\n" << "Type the number of the algorithm you want to run:\n"
+            << "1. Forward Selection\n"
+            << "2. Backward Selection\n";
+    int option = INT_MAX;
+    
+    do {
+        if (option != INT_MAX) {
+            std::cout << "Invalid Option\n";
+        };
+        std::cin >> option;
+        std::cin.clear();
+        std::cin.ignore();
+    } while (option != 1 && option != 2);
 
+    read(filename, data);
     data.init();
 
+    std::cout << "\n====Beginning Search====\n";
+
+    auto start = std::chrono::steady_clock::now();
+    switch (option) {
+        case 1:
+            feature_search_demo(data);
+            break;
+        case 2:
+            backwardsElimination(data);
+            break;
+        default:
+            feature_search_demo(data);
+            break;
+    };
+    auto end = std::chrono::steady_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+
+    std::cout << "Took " << (double)(duration.count()) << " seconds to finish search\n"; 
     return 0;
 };
 
@@ -88,16 +131,18 @@ void read(const std::string& filename, DATA& data) {
 void modifyData(const DATA& data, DATA& newData, const std::vector<int>& features, int feature_to_add) {
     newData = data;
 
-    // For Every Data Entry, For All of The Data Entry's Row, 0 Features that are not in features
     for (int i = 0; i < data.size(); i++) {
 
         for (int j = 0; j < data.features(); j++) {
             bool is_a_feature = false;
 
             for (int k = 0; k < features.size(); k++) {
-                if ((j + 1) == features.at(j)) {
+                if (j == features.at(k)) {
                     is_a_feature = true;
                 };
+            };
+            if (j == feature_to_add) {
+                is_a_feature = true;
             };
 
             if (!is_a_feature) {
@@ -106,29 +151,51 @@ void modifyData(const DATA& data, DATA& newData, const std::vector<int>& feature
         };
     };
 };
+void modifyData_remove(const DATA& data, DATA& newData, const std::vector<int>& features, int feature_to_remove) {
+    newData = data;
+
+    for (int i = 0; i < data.size(); i++) {
+
+        for (int j = 0; j < data.features(); j++) {
+            bool to_remove = true;
+
+            for (int k = 0; k < features.size(); k++) {
+                if (j == features.at(k)) {
+                    to_remove = false;
+                };
+            };
+
+            if (j == feature_to_remove) {
+                to_remove = true;
+            };
+
+            if (to_remove) {
+                newData.row.at(i).at(j) = 0;
+            };
+        };
+    };
+};
 // From Slides
 double leave_one_out_cross_validation(const DATA& data, std::vector<int>& features, int feature_to_add) {
-
     DATA newData;
     modifyData(data, newData, features, feature_to_add);
 
     int number_correctly_classified = 0;
 
     for (int i = 0; i < newData.size(); i++) {
-        std::vector<double> object_to_classify = newData.row.at(i);
+        const std::vector<double>& object_to_classify = newData.row.at(i);
         int label_object_to_classify = newData.originalClass.at(i);
 
         double nearest_neighbor_distance = DBL_MAX;
         int nearest_neighbor_location = INT_MAX;
         int nearest_neighbor_label = 0; // 1 or 2
 
-        for (int k = 1 ; k < data.size(); k++) {
+        for (int k = 0 ; k < newData.size(); k++) {
             if (k != i) {
                 double num = 0;
-                for (int a = 0; a < data.features(); a++) {
-                    double sum = (object_to_classify.at(a) - data.row.at(k).at(a));
-                    pow(sum, 2);
-                    num =+ sum;
+                for (int a = 0; a < newData.features(); a++) {
+                    double sum = (object_to_classify.at(a) - newData.row.at(k).at(a));
+                    num += pow(sum, 2.0);
                 };
 
                 double distance = sqrt(num);
@@ -146,35 +213,204 @@ double leave_one_out_cross_validation(const DATA& data, std::vector<int>& featur
         };
     };
 
-    double accuracy = number_correctly_classified / data.size();
+    double accuracy = (double)number_correctly_classified / data.size();
 
     return accuracy;
 };
-
 // From Slides
+bool isempty(const std::vector<int>& overlap) {
+    return overlap.empty();
+};
+std::vector<int> intersect(const std::vector<int>& features, int k) {
+    std::vector<int> results;
+    for (int i = 0; i < features.size(); i++) {
+        if (k == features.at(i)) {
+            results.push_back(features.at(i));
+        };
+    };
+
+    return results;
+};
 void feature_search_demo(DATA& data) {
-
     std::vector<int> current_set_of_features;
+    std::vector<int> best_set_of_features;
+    double best_accuracy = 0;
 
-    for (int i = 1; data.size(); i++) {
-        std::cout << "On the " << i << "th level of the search tree\n";
-        int feature_to_add_at_this_level = 1;
+    for (int i = 0; i < data.features(); i++) {
+        std::cout << "On the " << (i + 1) << "th level of the search tree\n";
+        int feature_to_add_at_this_level = -1;
         double best_so_far_accuracy = 0;
 
-        for (int j = 1; data.size(); j++) {
-            std::cout << "--Considering adding the " << j << " feature\n";
-            
-            double accuracy = leave_one_out_cross_validation(data, current_set_of_features, j);
+        for (int k = 0; k < data.features(); k++) {
+            if (isempty(intersect(current_set_of_features, k))) {
+                std::cout << "--Considering adding the " << (k + 1) << " feature\n";
+                
+                double accuracy = leave_one_out_cross_validation(data, current_set_of_features, k);
 
-            if (accuracy > best_so_far_accuracy) {
-                best_so_far_accuracy = accuracy;
-                feature_to_add_at_this_level = j;
+                std:: cout << "Using feature(s) {";
+                for (int a = 0; a < current_set_of_features.size(); a++) {
+                    if (a == 0) {
+                        std::cout << (current_set_of_features.at(a) + 1);
+                    }
+                    else {
+                        std::cout << ", " << (current_set_of_features.at(a) + 1);
+                    };
+                };
+
+                if (current_set_of_features.size() > 0) {
+                    std::cout << ", " << (k + 1);
+                }
+                else {
+                    std::cout << (k + 1);
+                };
+                
+                std::cout << "} accuracy is " << (accuracy * 100) << "%\n";
+
+                if (accuracy > best_so_far_accuracy) {
+                    best_so_far_accuracy = accuracy;
+                    feature_to_add_at_this_level = k;
+                };
             };
-
-
         };
 
-        current_set_of_features.push_back(feature_to_add_at_this_level);
+        if (feature_to_add_at_this_level != -1) {
+            current_set_of_features.push_back(feature_to_add_at_this_level);
+            std::cout << "On level " << (i + 1) << " i added feature " << (feature_to_add_at_this_level + 1) << " to current set\n";
+        }
+        else {
+            std::cout << "On level " << (i + 1) << " i didn't add a feature\n"; 
+        };
 
+        if (best_so_far_accuracy > best_accuracy) {
+            best_accuracy = best_so_far_accuracy;
+            best_set_of_features = current_set_of_features;
+        };
     };
+
+    std::cout << "\nFinished Search. Best Feature Subset is {";
+    for (int a = 0; a < best_set_of_features.size(); a++) {
+        if (a == 0) {
+            std::cout << (best_set_of_features.at(a) + 1);
+        }
+        else {
+            std::cout << ", " << (best_set_of_features.at(a) + 1);
+        };
+    };
+    std::cout << "}, which had an accuracy of " << (best_accuracy * 100) << "%\n";
+};
+void backwardsElimination(DATA& data) {
+
+    std::vector<int> current_set_of_features;
+    for (int i = 0; i < data.features(); i++) {
+        current_set_of_features.push_back(i);
+    };
+
+    std::vector<int> best_set_of_features;
+    double best_accuracy = 0;
+
+    for (int i = 0; i < data.features(); i++) {
+        std::cout << "On the " << (i + 1) << "th level of the search tree\n";
+        int feature_to_remove_at_this_level = -1;
+        double best_so_far_accuracy = 0;
+
+        for (int k = 0; k < data.features(); k++) {
+            if (!isempty(intersect(current_set_of_features, k))) {
+                std::cout << "--Considering removing the " << (k + 1) << " feature\n";
+                
+                double accuracy = backward_leave_one_out_cross_validation(data, current_set_of_features, k);
+
+                std:: cout << "Using feature(s) {";
+                bool first = true;
+                for (int a = 0; a < current_set_of_features.size(); a++) {
+                    if (current_set_of_features.at(a) != k) {
+                        if (first) {
+                            std::cout << (current_set_of_features.at(a) + 1);
+                            first = false;
+                        }
+                        else {
+                            std::cout << ", " << (current_set_of_features.at(a) + 1);
+                        };
+                    };
+                };
+                
+                std::cout << "} accuracy is " << (accuracy * 100) << "%\n";
+
+                if (accuracy > best_so_far_accuracy) {
+                    best_so_far_accuracy = accuracy;
+                    feature_to_remove_at_this_level = k;
+                };
+            };
+        };
+
+        if (feature_to_remove_at_this_level != -1) {
+            int eraseIndex;
+            for (int a = 0; a < current_set_of_features.size(); a++) {
+                if (current_set_of_features.at(a) == feature_to_remove_at_this_level) {
+                    eraseIndex = a;
+                };
+            };
+            current_set_of_features.erase(current_set_of_features.begin() + eraseIndex);
+            std::cout << "On level " << (i + 1) << " i removed feature " << (feature_to_remove_at_this_level + 1) << " to current set\n";
+        }
+        else {
+            std::cout << "On level " << (i + 1) << " i didn't remove a feature\n"; 
+        };
+
+        if (best_so_far_accuracy > best_accuracy) {
+            best_accuracy = best_so_far_accuracy;
+            best_set_of_features = current_set_of_features;
+        };
+    };
+
+    std::cout << "Finished Search. Best Feature Subset is {";
+    for (int a = 0; a < best_set_of_features.size(); a++) {
+        if (a == 0) {
+            std::cout << (best_set_of_features.at(a) + 1);
+        }
+        else {
+            std::cout << ", " << (best_set_of_features.at(a) + 1);
+        };
+    };
+    std::cout << "}, which had an accuracy of " << (best_accuracy * 100) << "%\n";
+};
+double backward_leave_one_out_cross_validation(const DATA& data, std::vector<int>& features, int feature_to_remove) {
+    DATA newData;
+    modifyData_remove(data, newData, features, feature_to_remove);
+
+    int number_correctly_classified = 0;
+
+    for (int i = 0; i < newData.size(); i++) {
+        const std::vector<double>& object_to_classify = newData.row.at(i);
+        int label_object_to_classify = newData.originalClass.at(i);
+
+        double nearest_neighbor_distance = DBL_MAX;
+        int nearest_neighbor_location = INT_MAX;
+        int nearest_neighbor_label = 0; // 1 or 2
+
+        for (int k = 0 ; k < newData.size(); k++) {
+            if (k != i) {
+                double num = 0;
+                for (int a = 0; a < newData.features(); a++) {
+                    double sum = (object_to_classify.at(a) - newData.row.at(k).at(a));
+                    num += pow(sum, 2.0);
+                };
+
+                double distance = sqrt(num);
+
+                if (distance < nearest_neighbor_distance) {
+                    nearest_neighbor_distance = distance;
+                    nearest_neighbor_location = k;
+                    nearest_neighbor_label = newData.originalClass.at(nearest_neighbor_location);
+                };
+            };
+        };
+
+        if (label_object_to_classify == nearest_neighbor_label) {
+            number_correctly_classified++;
+        };
+    };
+
+    double accuracy = (double)number_correctly_classified / data.size();
+
+    return accuracy;
 };
