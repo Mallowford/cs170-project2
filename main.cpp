@@ -237,17 +237,17 @@ void feature_search_demo(DATA& data) {
     double best_accuracy = 0;
 
     for (int i = 0; i < data.features(); i++) {
-        std::cout << "On the " << (i + 1) << "th level of the search tree\n";
+        // std::cout << "On the " << (i + 1) << "th level of the search tree\n";
         int feature_to_add_at_this_level = -1;
         double best_so_far_accuracy = 0;
 
         for (int k = 0; k < data.features(); k++) {
             if (isempty(intersect(current_set_of_features, k))) {
-                std::cout << "--Considering adding the " << (k + 1) << " feature\n";
+                // std::cout << "--Considering adding the " << (k + 1) << " feature\n";
                 
                 double accuracy = leave_one_out_cross_validation(data, current_set_of_features, k);
 
-                std:: cout << "Using feature(s) {";
+                std:: cout << "\tUsing feature(s) {";
                 for (int a = 0; a < current_set_of_features.size(); a++) {
                     if (a == 0) {
                         std::cout << (current_set_of_features.at(a) + 1);
@@ -275,10 +275,16 @@ void feature_search_demo(DATA& data) {
 
         if (feature_to_add_at_this_level != -1) {
             current_set_of_features.push_back(feature_to_add_at_this_level);
-            std::cout << "On level " << (i + 1) << " i added feature " << (feature_to_add_at_this_level + 1) << " to current set\n";
-        }
-        else {
-            std::cout << "On level " << (i + 1) << " i didn't add a feature\n"; 
+            std::cout << "Feature set {";
+            for (int i = 0; i < current_set_of_features.size(); i++) {
+                if (i == 0) {
+                    std::cout << (current_set_of_features.at(i));
+                }
+                else {
+                    std::cout << ", " << (current_set_of_features.at(i) + 1);
+                };
+            };
+            std::cout << "} was best, accuracy is " << (best_so_far_accuracy * 100) << "%\n";
         };
 
         if (best_so_far_accuracy > best_accuracy) {
@@ -309,17 +315,17 @@ void backwardsElimination(DATA& data) {
     double best_accuracy = 0;
 
     for (int i = 0; i < data.features(); i++) {
-        std::cout << "On the " << (i + 1) << "th level of the search tree\n";
+        // std::cout << "On the " << (i + 1) << "th level of the search tree\n";
         int feature_to_remove_at_this_level = -1;
         double best_so_far_accuracy = 0;
 
         for (int k = 0; k < data.features(); k++) {
             if (!isempty(intersect(current_set_of_features, k))) {
-                std::cout << "--Considering removing the " << (k + 1) << " feature\n";
+                // std::cout << "--Considering removing the " << (k + 1) << " feature\n";
                 
                 double accuracy = backward_leave_one_out_cross_validation(data, current_set_of_features, k);
 
-                std:: cout << "Using feature(s) {";
+                std:: cout << "\tUsing feature(s) {";
                 bool first = true;
                 for (int a = 0; a < current_set_of_features.size(); a++) {
                     if (current_set_of_features.at(a) != k) {
@@ -350,11 +356,20 @@ void backwardsElimination(DATA& data) {
                 };
             };
             current_set_of_features.erase(current_set_of_features.begin() + eraseIndex);
-            std::cout << "On level " << (i + 1) << " i removed feature " << (feature_to_remove_at_this_level + 1) << " to current set\n";
-        }
-        else {
-            std::cout << "On level " << (i + 1) << " i didn't remove a feature\n"; 
+            std::cout << "Feature set {";
+            for (int i = 0; i < current_set_of_features.size(); i++) {
+                if (i == 0) {
+                    std::cout << (current_set_of_features.at(i));
+                }
+                else {
+                    std::cout << ", " << (current_set_of_features.at(i) + 1);
+                };
+            };
+            std::cout << "} was best, accuracy is " << (best_so_far_accuracy * 100) << "%\n";
         };
+        // else {
+        //     // std::cout << "On level " << (i + 1) << " i didn't remove a feature\n"; 
+        // };
 
         if (best_so_far_accuracy > best_accuracy) {
             best_accuracy = best_so_far_accuracy;
