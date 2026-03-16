@@ -1,8 +1,9 @@
 Hello! This is Ryan Hoang's Feature Selection Algorithm.
-Type in the name of the file (with extension) you want to test: 
+Type in the name of the file (with extension) you want to test: CS170_Large_DataSet__28.txt
 Type the number of the algorithm you want to run:
 1. Forward Selection
 2. Backward Selection
+2
 
 ====Beginning Search====
 	Using feature(s) {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64} accuracy is 67.2333%
