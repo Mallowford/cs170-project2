@@ -1,9 +1,12 @@
 Hello! This is Ryan Hoang's Feature Selection Algorithm.
 Type in the name of the file (with extension) you want to test: CS170_Small_DataSet__15.txt
+
 Type the number of the algorithm you want to run:
 1. Forward Selection
 2. Backward Selection
 1
+This dataset has 16 features (not including the class attribute), with 500 instances.
+Running nearest neighbor with all 16 features, using "leaving-one-out" evaluation.
 
 ====Beginning Search====
 	Using feature(s) {1} accuracy is 83.6%

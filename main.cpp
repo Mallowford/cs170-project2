@@ -78,6 +78,9 @@ int main() {
     read(filename, data);
     data.init();
 
+    std::cout << "This dataset has " << data.features() << " features (not including the class attribute), with " << data.size() << " instances.\n"
+    << "Running nearest neighbor with all " << data.features() << " features, using \"leaving-one-out\" evaluation.\n";
+
     std::cout << "\n====Beginning Search====\n";
 
     auto start = std::chrono::steady_clock::now();
