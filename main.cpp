@@ -281,7 +281,7 @@ void feature_search_demo(DATA& data) {
             std::cout << "Feature set {";
             for (int i = 0; i < current_set_of_features.size(); i++) {
                 if (i == 0) {
-                    std::cout << (current_set_of_features.at(i));
+                    std::cout << (current_set_of_features.at(i) + 1);
                 }
                 else {
                     std::cout << ", " << (current_set_of_features.at(i) + 1);
@@ -362,7 +362,7 @@ void backwardsElimination(DATA& data) {
             std::cout << "Feature set {";
             for (int i = 0; i < current_set_of_features.size(); i++) {
                 if (i == 0) {
-                    std::cout << (current_set_of_features.at(i));
+                    std::cout << (current_set_of_features.at(i) + 1);
                 }
                 else {
                     std::cout << ", " << (current_set_of_features.at(i) + 1);
